@@ -460,7 +460,16 @@ async function fetchSteps(){
     console.log('Steps API status:',r.status,'body:',text.slice(0,400));
     if(r.status!==200){$('#stepsPill').style.display='flex';$('#stepsVal').textContent='err '+r.status;return;}
     const d=JSON.parse(text);
-    const steps=d.bucket?.[0]?.dataset?.[0]?.point?.reduce((sum,p)=>sum+(p.value?.[0]?.intVal||0),0)||0;
+    let steps=0;
+    for(const bucket of d.bucket||[]){
+      for(const dataset of bucket.dataset||[]){
+        for(const point of dataset.point||[]){
+          for(const val of point.value||[]){
+            steps+=val.intVal||val.fpVal||0;
+          }
+        }
+      }
+    }
     console.log('Steps:',steps);
     fitnessSteps=steps;
     renderSteps();
