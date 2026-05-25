@@ -247,6 +247,7 @@
             <span class="dot"></span>Connected
             <button class="gcal-disc" id="gcalDisc">Disconnect</button>
           </div>
+          <button class="pas-add-btn" id="healthConnectBtn" style="display:none;background:var(--good-soft);border-color:rgba(132,192,138,.3);color:var(--good)">⚡ Connect Health</button>
           <button class="pas-add-btn" id="pasAddBtn" style="display:none">+ Add event</button>
         </div>
       </div>
@@ -391,8 +392,8 @@ function initGoogleAuth(){
       showLoadingColumns();
       await fetchAllEvents();
       renderSchedule();
-      // Kick off health sign-in after calendar is connected
-      if(!healthToken) healthTokenClient.requestAccessToken({prompt:'consent'});
+      // Show health connect button if not yet connected
+      if(!healthToken) $('#healthConnectBtn').style.display='';
     }
   });
 
@@ -403,7 +404,8 @@ function initGoogleAuth(){
     callback:async(resp)=>{
       if(resp.error||!resp.access_token){console.warn('Health sign-in failed:',resp.error);return;}
       healthToken=resp.access_token;
-      setTimeout(()=>{healthToken=null;},(( resp.expires_in||3600)-60)*1000);
+      $('#healthConnectBtn').style.display='none';
+      setTimeout(()=>{healthToken=null;$('#healthConnectBtn').style.display='';},(( resp.expires_in||3600)-60)*1000);
       await fetchSteps();
     }
   });
@@ -931,6 +933,10 @@ async function init(){
   $('#evTitle').addEventListener('keydown',e=>{if(e.key==='Enter')addGCalEvent();});
   $('#evCancel').onclick=()=>{$('#pasForm').style.display='none';};
   $('#wxLoc').onclick=editLoc;
+  $('#healthConnectBtn').onclick=()=>{
+    if(!healthTokenClient)initGoogleAuth();
+    healthTokenClient.requestAccessToken({prompt:'consent'});
+  };
 
   // Init Google auth once GIS library loads
   const waitForGIS=setInterval(()=>{
