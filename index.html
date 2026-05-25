@@ -302,7 +302,7 @@
           </div>
           <div class="pas-col">
             <div class="pas-col-hd">
-              <div class="c-label">Axios · Swissinfo</div>
+              <div class="c-label">Axios · SRF</div>
             </div>
             <div id="newsItems"><div class="news-loading">Loading headlines…</div></div>
           </div>
@@ -632,7 +632,7 @@ function renderSchedule(){
 /* ── News: SRF Switzerland + Swissinfo (RSS, multi-proxy fallback) ── */
 const NEWS_FEEDS=[
   {url:'https://api.axios.com/feed/top/',src:'Axios',color:'#e3b35e'},
-  {url:'https://www.swissinfo.ch/eng/rss/swiss_affairs',src:'Swissinfo',color:'#84c08a'},
+  {url:'https://www.srf.ch/news/bnf/rss/1646',src:'SRF',color:'#84c08a'},
 ];
 const PROXIES=[
   u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
