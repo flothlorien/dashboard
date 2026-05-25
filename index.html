@@ -450,7 +450,7 @@ async function fetchSteps(){
       method:'POST',
       headers:{Authorization:'Bearer '+healthToken,'Content-Type':'application/json'},
       body:JSON.stringify({
-        aggregateBy:[{dataTypeName:'com.google.step_count.delta',dataSourceId:'derived:com.google.step_count.delta:com.google.android.gms:estimated_steps'}],
+        aggregateBy:[{dataTypeName:'com.google.step_count.delta'}],
         bucketByTime:{durationMillis:86400000},
         startTimeMillis:startOfDay,
         endTimeMillis:endOfDay
@@ -632,7 +632,7 @@ function renderSchedule(){
 /* ── News: SRF Switzerland + Swissinfo (RSS, multi-proxy fallback) ── */
 const NEWS_FEEDS=[
   {url:'https://api.axios.com/feed/top/',src:'Axios',color:'#e3b35e'},
-  {url:'https://www.swissinfo.ch/eng/rss/top_news',src:'Swissinfo',color:'#84c08a'},
+  {url:'https://www.swissinfo.ch/eng/rss/swiss_affairs',src:'Swissinfo',color:'#84c08a'},
 ];
 const PROXIES=[
   u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
