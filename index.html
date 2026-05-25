@@ -328,9 +328,9 @@ async function dbSet(k,v){
 
 /* ── constants ── */
 const CLIENT_ID_CAL='376346742576-5g3iv42gagm6d9uknl2cd48gnei07dae.apps.googleusercontent.com';
-const CLIENT_ID_HEALTH='376346742576-echh2neeh3kfsig9gi54snt0lf6bgh6e.apps.googleusercontent.com';
+const CLIENT_ID_HEALTH='376346742576-5g3iv42gagm6d9uknl2cd48gnei07dae.apps.googleusercontent.com';
 const SCOPE_CAL='https://www.googleapis.com/auth/calendar.events';
-const SCOPE_HEALTH='https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly';
+const SCOPE_HEALTH='https://www.googleapis.com/auth/fitness.activity.read';
 const CAL_IDS=['flo.misteli@gmail.com','7p0sf2qln3o8ihehmg875jtkfo@group.calendar.google.com'];
 
 /* ── state ── */
@@ -379,36 +379,25 @@ async function editName(){
 function initGoogleAuth(){
   if(!window.google?.accounts?.oauth2)return;
 
-  // Calendar token client
+  // Combined token client for calendar + fitness
   tokenClient=google.accounts.oauth2.initTokenClient({
     client_id:CLIENT_ID_CAL,
-    scope:SCOPE_CAL,
+    scope:SCOPE_CAL+' '+SCOPE_HEALTH,
     callback:async(resp)=>{
       if(resp.error||!resp.access_token){showGCalError('Sign-in failed: '+(resp.error||'no token'));return;}
       gcalToken=resp.access_token;
+      healthToken=resp.access_token;
       gcalConnected=true;
       gcalEverConnected=true;
-      setTimeout(()=>{gcalToken=null;gcalConnected=false;renderSchedule();},(( resp.expires_in||3600)-60)*1000);
+      $('#healthConnectBtn').style.display='none';
+      setTimeout(()=>{gcalToken=null;healthToken=null;gcalConnected=false;renderSchedule();},(( resp.expires_in||3600)-60)*1000);
       showLoadingColumns();
       await fetchAllEvents();
       renderSchedule();
-      // Show health connect button if not yet connected
-      if(!healthToken) $('#healthConnectBtn').style.display='';
-    }
-  });
-
-  // Health token client
-  healthTokenClient=google.accounts.oauth2.initTokenClient({
-    client_id:CLIENT_ID_HEALTH,
-    scope:SCOPE_HEALTH,
-    callback:async(resp)=>{
-      if(resp.error||!resp.access_token){console.warn('Health sign-in failed:',resp.error);return;}
-      healthToken=resp.access_token;
-      $('#healthConnectBtn').style.display='none';
-      setTimeout(()=>{healthToken=null;$('#healthConnectBtn').style.display='';},(( resp.expires_in||3600)-60)*1000);
       await fetchSteps();
     }
   });
+  healthTokenClient=tokenClient;
 }
 
 function showGCalError(msg){$('#gcalError').textContent=msg;$('#gcalError').style.display='block';}
@@ -455,15 +444,23 @@ async function fetchSteps(){
   if(!healthToken)return;
   try{
     const now=new Date();
-    const today=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
-    const filter=encodeURIComponent(`steps.interval.civil_start_time >= "${today}T00:00:00" AND steps.interval.civil_start_time < "${today}T23:59:59"`);
-    const url=`https://health.googleapis.com/v4/users/me/dataTypes/steps/dataPoints?filter=${filter}&page_size=1000`;
-    const r=await fetch(url,{headers:{Authorization:'Bearer '+healthToken,Accept:'application/json'}});
+    const startOfDay=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
+    const endOfDay=startOfDay+86400000;
+    const r=await fetch('https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+healthToken,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        aggregateBy:[{dataTypeName:'com.google.step_count.delta',dataSourceId:'derived:com.google.step_count.delta:com.google.android.gms:estimated_steps'}],
+        bucketByTime:{durationMillis:86400000},
+        startTimeMillis:startOfDay,
+        endTimeMillis:endOfDay
+      })
+    });
     const text=await r.text();
     console.log('Steps API status:',r.status,'body:',text.slice(0,400));
     if(r.status!==200){$('#stepsPill').style.display='flex';$('#stepsVal').textContent='err '+r.status;return;}
     const d=JSON.parse(text);
-    const steps=(d.dataPoints||[]).reduce((sum,p)=>sum+parseInt(p.steps?.count||0),0);
+    const steps=d.bucket?.[0]?.dataset?.[0]?.point?.reduce((sum,p)=>sum+(p.value?.[0]?.intVal||0),0)||0;
     console.log('Steps:',steps);
     fitnessSteps=steps;
     renderSteps();
@@ -638,8 +635,8 @@ const NEWS_FEEDS=[
   {url:'https://www.swissinfo.ch/eng/rss/top_news',src:'Swissinfo',color:'#84c08a'},
 ];
 const PROXIES=[
-  u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,
   u=>`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
 ];
 
@@ -866,32 +863,32 @@ function buildClockWx(iconKey,temp,cond,hi,lo,sunrise,sunset){
 async function loadWeather(){
   const{lat,lon,name}=profile.loc;
   $('#wxLoc').textContent=name;
-  const now=new Date();
   const coords='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon;
-
-  // Only use fields confirmed to work on both MeteoSwiss and global models
-  const fields=
-    '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m'+
+  const fullFields='&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m'+
     '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset'+
     '&timezone=auto&forecast_days=8';
+  const meteoFields='&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m'+
+    '&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=2';
 
   try{
-    let src='MeteoSwiss', d=null;
+    let src='MeteoSwiss', meteoD=null;
 
     try{
-      const r=await fetch(coords+fields+'&models=meteoswiss_seamless');
+      const r=await fetch(coords+meteoFields+'&models=meteoswiss_seamless');
       const j=await r.json();
-      if(!j.error&&j.current&&j.current.temperature_2m!=null) d=j;
+      if(!j.error&&j.current&&j.current.temperature_2m!=null) meteoD=j;
     }catch(_){}
 
-    if(!d){
-      src='Open-Meteo';
-      const r=await fetch(coords+fields);
-      d=await r.json();
-      if(d.error) throw new Error(d.reason||'API error');
-    }
+    // Always fetch full 8-day data for schedule weather bars
+    const fullR=await fetch(coords+fullFields);
+    const fullD=await fullR.json();
+    if(fullD.error) throw new Error(fullD.reason||'API error');
 
-    const c=d.current, day=d.daily;
+    // Use MeteoSwiss current conditions if available, Open-Meteo for daily
+    const c=meteoD?meteoD.current:fullD.current;
+    const day=fullD.daily;
+    if(!meteoD) src='Open-Meteo';
+
     const[cond,iconKey]=WX[c.weather_code]||['Cloudy','cloud'];
     const sunrise=day.sunrise?.[0]?.slice(11,16)||'';
     const sunset=day.sunset?.[0]?.slice(11,16)||'';
