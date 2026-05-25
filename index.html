@@ -326,14 +326,17 @@ async function dbSet(k,v){
 }
 
 /* ── constants ── */
-const CLIENT_ID='376346742576-5g3iv42gagm6d9uknl2cd48gnei07dae.apps.googleusercontent.com';
-const SCOPE='https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly';
+const CLIENT_ID_CAL='376346742576-5g3iv42gagm6d9uknl2cd48gnei07dae.apps.googleusercontent.com';
+const CLIENT_ID_HEALTH='376346742576-echh2neeh3kfsig9gi54snt0lf6bgh6e.apps.googleusercontent.com';
+const SCOPE_CAL='https://www.googleapis.com/auth/calendar.events';
+const SCOPE_HEALTH='https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly';
 const CAL_IDS=['flo.misteli@gmail.com','7p0sf2qln3o8ihehmg875jtkfo@group.calendar.google.com'];
 
 /* ── state ── */
 let profile={name:'Flo',loc:{name:'Uster',lat:47.347,lon:8.721}};
 let gcalToken=null, gcalConnected=false, gcalEverConnected=false, gcalRawEvents=[];
-let tokenClient=null;
+let healthToken=null;
+let tokenClient=null, healthTokenClient=null;
 let fitnessSteps=null;
 
 /* ── helpers ── */
@@ -371,53 +374,59 @@ async function editName(){
   if(v!==null){profile.name=v.trim()||null;await dbSet('profile',profile);tickClock();renderSchedule();}
 }
 
-/* ── google calendar ── */
+/* ── google auth ── */
 function initGoogleAuth(){
   if(!window.google?.accounts?.oauth2)return;
+
+  // Calendar token client
   tokenClient=google.accounts.oauth2.initTokenClient({
-    client_id:CLIENT_ID,
-    scope:SCOPE,
+    client_id:CLIENT_ID_CAL,
+    scope:SCOPE_CAL,
     callback:async(resp)=>{
-      if(resp.error||!resp.access_token){
-        showGCalError('Sign-in failed: '+(resp.error||'no token returned'));
-        return;
-      }
+      if(resp.error||!resp.access_token){showGCalError('Sign-in failed: '+(resp.error||'no token'));return;}
       gcalToken=resp.access_token;
       gcalConnected=true;
       gcalEverConnected=true;
-      // Expire token ~1 min before actual expiry
-      setTimeout(()=>{gcalToken=null;gcalConnected=false;renderSchedule();},
-        ((resp.expires_in||3600)-60)*1000);
+      setTimeout(()=>{gcalToken=null;gcalConnected=false;renderSchedule();},(( resp.expires_in||3600)-60)*1000);
       showLoadingColumns();
-      await Promise.all([fetchAllEvents(), fetchSteps()]);
+      await fetchAllEvents();
       renderSchedule();
+      // Kick off health sign-in after calendar is connected
+      if(!healthToken) healthTokenClient.requestAccessToken({prompt:'consent'});
+    }
+  });
+
+  // Health token client
+  healthTokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:CLIENT_ID_HEALTH,
+    scope:SCOPE_HEALTH,
+    callback:async(resp)=>{
+      if(resp.error||!resp.access_token){console.warn('Health sign-in failed:',resp.error);return;}
+      healthToken=resp.access_token;
+      setTimeout(()=>{healthToken=null;},(( resp.expires_in||3600)-60)*1000);
+      await fetchSteps();
     }
   });
 }
 
-function showGCalError(msg){
-  $('#gcalError').textContent=msg;
-  $('#gcalError').style.display='block';
-}
+function showGCalError(msg){$('#gcalError').textContent=msg;$('#gcalError').style.display='block';}
 
 function connectGCal(){
   $('#gcalError').style.display='none';
   if(window.location.protocol==='file:'){
-    showGCalError('Running from a local file — Google Sign-In requires an HTTP server. Open a terminal in this file\'s folder and run: python3 -m http.server 8080 — then open http://localhost:8080/dashboard.html and make sure http://localhost:8080 is added to your OAuth client\'s Authorised JavaScript origins in Google Cloud Console.');
+    showGCalError('Running from a local file — please open via http://localhost:8080 or https://flothlorien.github.io/dashboard/');
     return;
   }
-  if(!window.google?.accounts?.oauth2){
-    showGCalError('Google Sign-In library not loaded. Check your internet connection and reload.');
-    return;
-  }
+  if(!window.google?.accounts?.oauth2){showGCalError('Google Sign-In library not loaded. Check your internet connection and reload.');return;}
   if(!tokenClient)initGoogleAuth();
   tokenClient.requestAccessToken({prompt:'consent'});
 }
 
 function disconnectGCal(){
   const tok=gcalToken;
-  gcalToken=null;gcalConnected=false;gcalRawEvents=[];
+  gcalToken=null;gcalConnected=false;gcalRawEvents=[];healthToken=null;fitnessSteps=null;
   if(tok&&window.google?.accounts?.oauth2)google.accounts.oauth2.revoke(tok,()=>{});
+  $('#stepsPill').style.display='none';
   renderSchedule();
 }
 
@@ -441,31 +450,22 @@ async function fetchAllEvents(){
 }
 
 async function fetchSteps(){
-  if(!gcalToken)return;
+  if(!healthToken)return;
   try{
     const now=new Date();
     const today=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
     const filter=encodeURIComponent(`steps.interval.civil_start_time >= "${today}T00:00:00" AND steps.interval.civil_start_time < "${today}T23:59:59"`);
     const url=`https://health.googleapis.com/v4/users/me/dataTypes/steps/dataPoints?filter=${filter}&page_size=1000`;
-    const r=await fetch(url,{headers:{Authorization:'Bearer '+gcalToken,Accept:'application/json'}});
+    const r=await fetch(url,{headers:{Authorization:'Bearer '+healthToken,Accept:'application/json'}});
     const text=await r.text();
-    console.log('Steps API status:',r.status,'body:',text.slice(0,800));
-    if(r.status!==200){
-      // Show error visibly in the pill for debugging
-      $('#stepsPill').style.display='flex';
-      $('#stepsVal').textContent='err '+r.status;
-      return;
-    }
+    console.log('Steps API status:',r.status,'body:',text.slice(0,400));
+    if(r.status!==200){$('#stepsPill').style.display='flex';$('#stepsVal').textContent='err '+r.status;return;}
     const d=JSON.parse(text);
     const steps=(d.dataPoints||[]).reduce((sum,p)=>sum+parseInt(p.steps?.count||0),0);
-    console.log('Steps fetched:',steps,'from',d.dataPoints?.length,'data points');
+    console.log('Steps:',steps);
     fitnessSteps=steps;
     renderSteps();
-  }catch(e){
-    console.error('Steps error:',e);
-    $('#stepsPill').style.display='flex';
-    $('#stepsVal').textContent='err';
-  }
+  }catch(e){console.error('Steps error:',e);}
 }
 
 function renderSteps(){
@@ -940,7 +940,8 @@ async function init(){
 
   // Auto-refresh events every 5 min
   setInterval(async()=>{
-    if(gcalConnected&&gcalToken){await Promise.all([fetchAllEvents(),fetchSteps()]);renderSchedule();}
+    if(gcalConnected&&gcalToken){await fetchAllEvents();renderSchedule();}
+    if(healthToken){await fetchSteps();}
   },5*60*1000);
 
   loadWeather(); setInterval(loadWeather,15*60*1000);
