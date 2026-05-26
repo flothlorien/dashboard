@@ -80,7 +80,7 @@
   .greeting b{font-style:normal;color:var(--text);cursor:pointer;border-bottom:1px dashed transparent;transition:.2s}
   .greeting b:hover{border-bottom-color:var(--line-strong)}
   .date-big{font-family:var(--display);font-size:clamp(38px,5.5vw,58px);line-height:.95;letter-spacing:-.02em;color:var(--text)}
-  .time{font-family:var(--display);font-style:italic;font-size:clamp(30px,4.2vw,48px);line-height:1;font-feature-settings:"tnum";letter-spacing:-.01em;color:var(--muted);align-self:flex-end}
+  .time{font-family:var(--display);font-style:italic;font-size:clamp(72px,10vw,120px);line-height:1;font-feature-settings:"tnum";letter-spacing:-.01em;color:var(--muted);align-self:flex-end}
   .time .sec{font-size:.75em;color:var(--accent)}
   .clock-foot{display:flex;align-items:center;gap:14px;color:var(--muted);font-size:14px;margin-top:12px}
   .clock-foot .pill{background:var(--surface-2);border:1px solid var(--line);padding:5px 12px;border-radius:999px;font-size:12.5px;color:var(--text)}
@@ -247,7 +247,7 @@
         <span id="weeknum"></span>
         <div class="steps-pill" id="stepsPill">
           <span class="sp-icon">↑</span>
-          <span id="stepsVal">0</span> steps
+          <span id="stepsVal">0</span><span style="color:var(--faint);font-size:11px"> / 6k</span>
           <div class="sp-bar"><div class="sp-fill" id="stepsFill" style="width:0%"></div></div>
         </div>
         <span class="wx-loc" id="wxLoc" style="margin-left:auto">· · ·</span>
@@ -509,7 +509,7 @@ async function fetchSteps(){
 
 function renderSteps(){
   if(fitnessSteps===null)return;
-  const goal=10000;
+  const goal=6000;
   const pct=Math.min(100,Math.round(fitnessSteps/goal*100));
   $('#stepsVal').textContent=fitnessSteps.toLocaleString();
   $('#stepsFill').style.width=pct+'%';
