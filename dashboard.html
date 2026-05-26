@@ -787,7 +787,7 @@ function renderSleep(nights){
 
 /* ── PA weekly briefing (Claude API, generated once daily) ── */
 async function generateBriefing(){
-  const cacheKey='briefing_'+todayKey();
+  const cacheKey='briefing2_'+todayKey();
   const cached=await dbGet(cacheKey,null);
   if(cached&&cached.length>20){
     $('#briefingText').innerHTML=cached;
@@ -828,14 +828,14 @@ async function generateBriefing(){
     wxContext=lines.join(' | ');
   }
 
-  const prompt=`You are a personal assistant giving a brief spoken weekly overview to Flo, a 34-year-old working professional based in Uster, Switzerland. 
+  const prompt=`You are a personal assistant giving Flo a quick spoken briefing about their week. Flo is a 34-year-old professional in Uster, Switzerland. Work hours Mon–Fri 9–18 are assumed — only personal appointments are listed below.
 
-Calendar events this week (work hours Mon–Fri 9–18 assumed, only personal/after-work appointments listed):
-${days.length?days.join('\n'):'No personal appointments this week.'}
+Calendar this week:
+${days.length?days.join('\n'):'Nothing on.'}
 
-Weather forecast: ${wxContext||'Not available.'}
+Weather: ${wxContext||'Not available.'}
 
-Write a single natural paragraph (3–5 sentences) as if speaking to Flo directly. Mention the highlights, any weather worth noting for specific days, and the general feel of the week. Be warm but concise — no bullet points, no greetings, no sign-off. Start mid-sentence as if continuing a conversation. Use plain text only, no markdown.`;
+Write 2–3 sentences max. Only mention the most notable events. Only mention weather if it actually affects something (e.g. rain on a day with an outdoor plan or a day they need to travel). No greetings, no sign-off, no filler. Spoken and direct, like a PA rattling off the highlights. Plain text only.`;
 
   try{
     const resp=await fetch('https://dashboard-briefing.rakastansadetta.workers.dev/',{
