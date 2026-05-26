@@ -86,14 +86,14 @@
   .clock-foot .pill{background:var(--surface-2);border:1px solid var(--line);padding:5px 12px;border-radius:999px;font-size:12.5px;color:var(--text)}
 
   /* weather bar inside schedule columns */
-  .col-wx{display:flex;align-items:center;gap:10px;margin-top:8px;padding:9px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px}
+  .col-wx{display:flex;align-items:center;gap:10px;margin-top:8px;margin-bottom:14px;padding:9px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px}
   .col-wx svg{flex:none}
-  .col-wx-info{display:flex;flex-direction:column;gap:1px;flex:1}
+  .col-wx-info{display:flex;flex-direction:column;gap:4px;flex:1}
   .col-wx-temps{font-size:13px;font-weight:600;font-feature-settings:"tnum";display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
   .col-wx-temps .hi{color:var(--accent)}
   .col-wx-temps .lo{color:var(--faint)}
   .col-wx-sep{color:var(--faint);opacity:.5;font-weight:400}
-  .col-wx-outfit{font-size:12.5px;font-weight:400;color:var(--muted)}
+  .col-wx-outfit{font-size:12px;font-weight:400;color:var(--muted);display:block;margin-top:1px}
   .col-wx-desc{font-size:11.5px;color:var(--muted)}
   .col-wx-rain{font-size:11px;color:var(--accent);opacity:.85}
 
@@ -176,9 +176,14 @@
 
   .pas-ev.past{opacity:.38}
   .pas-ev.past .pas-ev-time{color:var(--faint)}
-  .pas-ev.now{background:var(--accent-soft);border-radius:9px;margin:0 -8px;padding:9px 8px}
+  .pas-ev.now{border-radius:9px;border:1.5px solid var(--accent);overflow:hidden;position:relative;margin:0 -1px}
   .pas-ev.now .pas-ev-time{color:var(--accent)}
   .pas-ev.now .pas-ev-dot{background:var(--accent);opacity:1}
+  .pas-ev-fill{position:absolute;top:0;left:0;bottom:0;background:rgba(227,179,94,.18);pointer-events:none;transition:width .5s ease}
+  .pas-ev-remain{position:absolute;top:0;bottom:0;right:0;background:var(--ink);pointer-events:none}
+  .pas-ev.now .pas-ev-inner{position:relative;z-index:1;display:flex;align-items:flex-start;gap:10px;width:100%}
+  .pas-ev-tag{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:700;background:var(--accent);color:#1a1408;flex:none;align-self:center;margin-left:auto}
+  .pas-ev-remaining{font-size:11px;color:var(--accent);font-feature-settings:"tnum";margin-top:3px}
   .now-indicator{display:flex;align-items:center;gap:8px;margin:6px 0;opacity:.7}
   .now-indicator::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   .now-indicator::after{content:"";flex:1;height:1px;background:var(--accent);opacity:.4}
@@ -264,6 +269,20 @@
           </div>
           <div id="briefingText" style="font-family:var(--display);font-style:italic;font-size:15.5px;line-height:1.75;color:var(--muted)"></div>
           <div id="briefingMeta" style="font-size:11px;color:var(--faint);margin-top:10px"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WEEKLY REVIEW (Sundays) -->
+    <section class="card pasched" id="reviewCard" style="padding:20px 26px;display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:3px;align-self:stretch;background:var(--good);border-radius:2px;opacity:.7;flex:none"></div>
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:8px;display:flex;align-items:center;gap:8px">
+            <span style="width:5px;height:5px;border-radius:50%;background:var(--good);display:inline-block"></span>Week in review
+          </div>
+          <div id="reviewText" style="font-family:var(--display);font-style:italic;font-size:15.5px;line-height:1.75;color:var(--muted)"></div>
+          <div id="reviewMeta" style="font-size:11px;color:var(--faint);margin-top:10px"></div>
         </div>
       </div>
     </section>
@@ -426,6 +445,7 @@ function initGoogleAuth(){
       renderSchedule();
       await Promise.all([fetchSteps(), fetchSleep()]);
       generateBriefing();
+      generateWeeklyReview();
     }
   });
   healthTokenClient=tokenClient;
@@ -521,15 +541,19 @@ function processEvents(raw){
   return raw.map(e=>{
     const isAllDay=!e.start.dateTime;
     const date=isAllDay?e.start.date:e.start.dateTime.slice(0,10);
-    let time='';
+    let time='',endTime='';
     if(!isAllDay&&e.start.dateTime){
       const dt=new Date(e.start.dateTime);
       time=pad(dt.getHours())+':'+pad(dt.getMinutes());
     }
+    if(!isAllDay&&e.end?.dateTime){
+      const dt=new Date(e.end.dateTime);
+      endTime=pad(dt.getHours())+':'+pad(dt.getMinutes());
+    }
     const rawTitle=e.summary||'(No title)';
     const isSydney=/^\[S\]/i.test(rawTitle.trim());
     const title=isSydney?rawTitle.trim().replace(/^\[S\]\s*/i,''):rawTitle;
-    return{id:e.id,title,date,time,isAllDay,calId:e._calId,isShared:e._calId!==CAL_IDS[0],isSydney};
+    return{id:e.id,title,date,time,endTime,isAllDay,calId:e._calId,isShared:e._calId!==CAL_IDS[0],isSydney};
   });
 }
 
@@ -541,12 +565,40 @@ function dayEvs(processed,key){
   });
 }
 
-function evHTML(ev,state){
+function evHTML(ev,state,nowMin){
   const tl=ev.isAllDay?'All day':ev.time||'—';
   const tc='pas-ev-time'+(ev.isAllDay?' all-day':'')+(ev.isSydney?' sydney':'');
   const dc='pas-ev-dot'+(ev.isSydney?' sydney':ev.isShared?' shared':'');
-  const cls='pas-ev'+(ev.isSydney?' sydney-ev':'')+(state?' '+state:'');
   const owner=ev.isSydney?'<span class="pas-ev-owner">S</span>':'';
+
+  if(state==='now'&&ev.time&&nowMin!=null){
+    const toMin=t=>{if(!t)return null;const[h,m]=t.split(':').map(Number);return h*60+m;};
+    const start=toMin(ev.time);
+    const end=ev.endTime?toMin(ev.endTime):(start!=null?start+60:null);
+    const duration=end&&start!=null?end-start:60;
+    const elapsed=start!=null?nowMin-start:0;
+    const pct=Math.min(100,Math.max(0,Math.round(elapsed/duration*100)));
+    const remaining=end!=null?end-nowMin:null;
+    const remText=remaining!=null?(remaining>=60?Math.floor(remaining/60)+'h '+(remaining%60?remaining%60+'m':''):remaining+'m left'):'';
+    return `<div class="pas-ev now">
+      <div class="pas-ev-fill" style="width:${pct}%"></div>
+      <div class="pas-ev-remain" style="left:${pct}%"></div>
+      <div class="pas-ev-inner">
+        <span class="${tc}">${tl}</span>
+        <span class="${dc}"></span>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="pas-ev-title">${esc(ev.title)}${owner}</span>
+            <span class="pas-ev-tag">Now</span>
+          </div>
+          ${remText?`<div class="pas-ev-remaining">${remText}</div>`:''}
+        </div>
+        <button class="pas-ev-del" data-id="${ev.id}" data-cal="${esc(ev.calId)}">×</button>
+      </div>
+    </div>`;
+  }
+
+  const cls='pas-ev'+(ev.isSydney?' sydney-ev':'')+(state?' '+state:'');
   return '<div class="'+cls+'">'+
     '<span class="'+tc+'">'+tl+'</span>'+
     '<span class="'+dc+'"></span>'+
@@ -556,28 +608,23 @@ function evHTML(ev,state){
 }
 
 function todayEvHTML(evs,nowMin){
-  // nowMin = current hour*60+min
   const toMin=t=>{if(!t)return null;const[h,m]=t.split(':').map(Number);return h*60+m;};
-  let html='', nowLinePlaced=false;
+  let html='',nowLinePlaced=false;
   evs.forEach((ev,i)=>{
     const start=toMin(ev.time);
-    // Look ahead for end time (next event's start, or start+60 as fallback)
-    const nextStart=evs[i+1]?toMin(evs[i+1].time):null;
-    const end=nextStart||(start!=null?start+60:null);
+    const end=ev.endTime?toMin(ev.endTime):(evs[i+1]?toMin(evs[i+1].time):(start!=null?start+60:null));
     let state='';
-    if(ev.isAllDay) state='';
-    else if(start==null) state='';
-    else if(end!=null&&nowMin>=start&&nowMin<end) state='now';
-    else if(start<nowMin) state='past';
-    // Insert now-indicator line before the first upcoming event
+    if(ev.isAllDay)state='';
+    else if(start==null)state='';
+    else if(end!=null&&nowMin>=start&&nowMin<end)state='now';
+    else if(start<nowMin)state='past';
     if(!nowLinePlaced&&!ev.isAllDay&&start!=null&&start>nowMin){
       html+='<div class="now-indicator"></div>';
       nowLinePlaced=true;
     }
-    html+=evHTML(ev,state);
+    html+=evHTML(ev,state,nowMin);
   });
-  // If all events are in the past, indicator goes at the end
-  if(!nowLinePlaced&&evs.some(e=>!e.isAllDay)) html+='<div class="now-indicator"></div>';
+  if(!nowLinePlaced&&evs.some(e=>!e.isAllDay))html+='<div class="now-indicator"></div>';
   return html;
 }
 
@@ -591,7 +638,7 @@ function showLoadingColumns(){
 }
 
 /* ── schedule render ── */
-function renderSchedule(){
+async function renderSchedule(){
   const now=new Date();
   const today=todayKey();
   const t2=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
@@ -623,7 +670,7 @@ function renderSchedule(){
   $('#pasColsWrap').style.display='block';
 
   // ── weather bars (with inline outfit) ──
-  function wxBarHTML(dayIdx){
+  async function wxBarHTML(dayIdx){
     if(!wxData) return '';
     const day=wxData.day;
     const hi=Math.round(day.temperature_2m_max[dayIdx]);
@@ -633,12 +680,13 @@ function renderSchedule(){
     const[cond,iconKey]=dayIdx===0?(WX[code]||['—','cloud']):['—','cloud'];
     const desc=dayIdx===0?cond:'';
     const outfit=dayIdx===0
-      ?outfitAdvice(wxData.c,wxData.day)
-      :outfitAdviceForDay(wxData.day,dayIdx);
+      ?await outfitAdvice(wxData.c,wxData.day)
+      :await outfitAdviceForDay(wxData.day,dayIdx);
     return `<div class="col-wx">
       ${wxIcon(iconKey,22)}
       <div class="col-wx-info">
-        <div class="col-wx-temps"><span class="hi">↑${hi}°</span><span class="lo">↓${lo}°</span>${rain>=30?`<span class="col-wx-rain">☂ ${rain}%</span>`:''} ${desc?`<span class="col-wx-desc">${desc}</span>`:''}${outfit?`<span class="col-wx-sep">·</span><span class="col-wx-outfit">${outfit.icon} ${outfit.text}</span>`:''}</div>
+        <div class="col-wx-temps"><span class="hi">↑${hi}°</span><span class="lo">↓${lo}°</span>${rain>=30?`<span class="col-wx-rain">☂ ${rain}%</span>`:''} ${desc?`<span class="col-wx-desc">${esc(desc)}</span>`:''}</div>
+        ${outfit?`<span class="col-wx-outfit">${outfit.icon} ${esc(outfit.text)}</span>`:''}
       </div>
     </div>`;
   }
@@ -651,7 +699,7 @@ function renderSchedule(){
 
   // Today
   const todayList=dayEvs(processed,today);
-  let todayHTML=wxBarHTML(0);
+  let todayHTML=await wxBarHTML(0);
   todayHTML+=todayList.length
     ?todayEvHTML(todayList,nowMin)
     :'<div class="pas-empty">Nothing on the books '+timeOfDay+name+'.<br>Looks like a clear day.</div>';
@@ -660,9 +708,9 @@ function renderSchedule(){
 
   // Tomorrow
   const tmrwList=dayEvs(processed,tmrw);
-  let tmrwHTML=wxBarHTML(1);
+  let tmrwHTML=await wxBarHTML(1);
   tmrwHTML+=tmrwList.length
-    ?tmrwList.map(e=>evHTML(e)).join('')
+    ?tmrwList.map(e=>evHTML(e,'')).join('')
     :'<div class="pas-empty">Nothing lined up yet.</div>';
 
   $('#tmrwEvs').innerHTML=tmrwHTML;
@@ -799,7 +847,7 @@ function renderSleep(nights){
 
 /* ── PA weekly briefing (Claude API, generated once daily) ── */
 async function generateBriefing(){
-  const cacheKey='briefing2_'+todayKey();
+  const cacheKey='briefing3_'+todayKey();
   const cached=await dbGet(cacheKey,null);
   if(cached&&cached.length>20){
     $('#briefingText').innerHTML=cached;
@@ -840,6 +888,15 @@ async function generateBriefing(){
     wxContext=lines.join(' | ');
   }
 
+  // Health context
+  let healthContext='';
+  if(fitnessSteps!==null) healthContext+=`Steps so far today: ${fitnessSteps.toLocaleString()} (goal: 6,000). `;
+  const lastSleepEl=$('#sleepPanel .sleep-big');
+  if(lastSleepEl){
+    const sleepText=lastSleepEl.textContent?.trim();
+    if(sleepText) healthContext+=`Last night's sleep: ${sleepText}. `;
+  }
+
   const prompt=`You are a personal assistant giving Flo a quick spoken briefing about their week. Flo is a 34-year-old professional in Uster, Switzerland. Work hours Mon–Fri 9–18 are assumed — only personal appointments are listed below.
 
 Calendar this week:
@@ -847,7 +904,9 @@ ${days.length?days.join('\n'):'Nothing on.'}
 
 Weather: ${wxContext||'Not available.'}
 
-Write 2–3 sentences max. Only mention the most notable events. Only mention weather if it actually affects something (e.g. rain on a day with an outdoor plan or a day they need to travel). No greetings, no sign-off, no filler. Spoken and direct, like a PA rattling off the highlights. Plain text only.`;
+Health today: ${healthContext||'No data available.'}
+
+Write 2–3 sentences max. Only mention the most notable events. Only mention weather if it actually affects something. If sleep was poor (under 6h) or steps are very low, briefly note it. No greetings, no sign-off, no filler. Spoken and direct. Plain text only.`;
 
   try{
     const resp=await fetch('https://dashboard-briefing.rakastansadetta.workers.dev/',{
@@ -879,6 +938,48 @@ Write 2–3 sentences max. Only mention the most notable events. Only mention we
     console.error('Briefing error:',e);
   }
 }
+/* ── weekly review (Sundays) ── */
+async function generateWeeklyReview(){
+  const now=new Date();
+  if(now.getDay()!==0){$('#reviewCard').style.display='none';return;}
+  const cacheKey='review_'+todayKey();
+  const cached=await dbGet(cacheKey,null);
+  if(cached&&cached.length>20){
+    $('#reviewText').textContent=cached;
+    $('#reviewMeta').textContent='Your week at a glance';
+    $('#reviewCard').style.display='';
+    return;
+  }
+  const processed=processEvents(gcalRawEvents);
+  const weekEvents=[];
+  for(let i=-6;i<=0;i++){
+    const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i);
+    const key=todayKey(d);
+    const evs=dayEvs(processed,key).filter(e=>!e.isSydney);
+    if(evs.length) weekEvents.push(DAYS[d.getDay()]+' '+d.getDate()+': '+evs.map(e=>(e.time?e.time+' ':'')+e.title).join(', '));
+  }
+  let healthCtx='';
+  if(fitnessSteps!==null) healthCtx+=`Steps today: ${fitnessSteps.toLocaleString()}. `;
+  const sleepEl=$('#sleepPanel .sleep-big');
+  if(sleepEl) healthCtx+=`Last night's sleep: ${sleepEl.textContent?.trim()}. `;
+  const prompt=`Personal assistant giving Flo a warm end-of-week reflection. Sunday evening. This week's personal events:\n${weekEvents.length?weekEvents.join('\n'):'Quiet week.'}\nHealth: ${healthCtx||'No data.'}\nWrite 2–3 sentences reflecting on the week and one forward-looking note if relevant. Warm, brief. No greetings or sign-off. Plain text only.`;
+  try{
+    const resp=await fetch('https://dashboard-briefing.rakastansadetta.workers.dev/',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:200,messages:[{role:'user',content:prompt}]})
+    });
+    const data=await resp.json();
+    const text=data.content?.find(c=>c.type==='text')?.text?.trim()||'';
+    if(text){
+      await dbSet(cacheKey,text);
+      $('#reviewText').textContent=text;
+      $('#reviewMeta').textContent='Your week at a glance';
+      $('#reviewCard').style.display='';
+    }
+  }catch(e){console.error('Review error:',e);}
+}
+
+/* ── add event ── */
 async function addGCalEvent(){
   const title=$('#evTitle').value.trim(),date=$('#evDate').value,time=$('#evTime').value;
   if(!title||!date)return;
@@ -959,37 +1060,57 @@ function wxDescription(c,day,hourly){
   return desc;
 }
 
-function _outfitFromTemps(feels,hi,rain,isSnow){
-  let top,bottom,icon,extras=[];
-  // Top
-  if(feels<=8){icon='🧥';top='Winter coat';}
-  else if(feels<=14){icon='🧥';top='Jacket';}
-  else if(feels<=19){icon='🧥';top='Light jacket';}
-  else{icon='👕';top='T-shirt';}
-  // Bottom
-  bottom=feels<=19?'long trousers':'shorts';
-  // Extras
-  if(isSnow)extras.push('+ waterproof boots');
-  else if(rain>=60)extras.push('+ umbrella');
-  else if(rain>=35)extras.push('+ umbrella (maybe)');
-  const text=top+', '+bottom+(extras.length?' '+extras.join(', '):'');
-  return{icon,text};
+/* ── outfit (Claude-powered) ── */
+async function claudeOutfit(prompt){
+  try{
+    const resp=await fetch('https://dashboard-briefing.rakastansadetta.workers.dev/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:60,messages:[{role:'user',content:prompt}]})
+    });
+    const data=await resp.json();
+    return data.content?.find(c=>c.type==='text')?.text?.trim()||'';
+  }catch(e){return '';}
 }
 
-function outfitAdvice(c,day){
+async function outfitAdvice(c,day){
   const feels=Math.round(c.apparent_temperature);
+  const hi=Math.round(day.temperature_2m_max[0]);
+  const lo=Math.round(day.temperature_2m_min[0]);
   const rain=day.precipitation_probability_max?.[0]??0;
   const isSnow=[71,73,75,77,85,86].includes(c.weather_code);
-  return _outfitFromTemps(feels,Math.round(day.temperature_2m_max[0]),rain,isSnow);
+  const processed=processEvents(gcalRawEvents);
+  const todayEvsList=dayEvs(processed,todayKey()).filter(e=>!e.isSydney).map(e=>(e.time?e.time+' ':'')+e.title).join(', ');
+  const cacheKey='outfit_'+todayKey();
+  const cached=await dbGet(cacheKey,null);
+  if(cached&&cached.length>3){const clean=cached.split('\n')[0].trim();const icon=clean.match(/\p{Emoji}/u)?.[0]||'👕';return{icon,text:clean.replace(/^\p{Emoji}\s*/u,'')};}
+  const prompt=`Flo is a 30-year-old man in Uster Switzerland. Today: feels ${feels}°, high ${hi}°, low ${lo}°, rain ${rain}%${isSnow?', snow possible':''}. Appointments: ${todayEvsList||'nothing specific'}. Recommend what to wear as a man. Reply with ONLY one emoji + max 8 words. No explanations, no extra lines.`;
+  const text=await claudeOutfit(prompt);
+  if(text.length>3)await dbSet(cacheKey,text.split('\n')[0].trim());
+  const clean=text.split('\n')[0].trim();
+  return{icon:clean.match(/\p{Emoji}/u)?.[0]||'👕',text:clean.replace(/^\p{Emoji}\s*/u,'')};
 }
 
-function outfitAdviceForDay(dayData,idx){
+async function outfitAdviceForDay(dayData,idx){
   const hi=Math.round(dayData.temperature_2m_max[idx]);
   const lo=Math.round(dayData.temperature_2m_min[idx]);
   const feels=Math.round((hi+lo)/2);
   const rain=dayData.precipitation_probability_max?.[idx]??0;
-  return _outfitFromTemps(feels,hi,rain,false);
+  const now=new Date();
+  const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()+idx);
+  const key=todayKey(d);
+  const processed=processEvents(gcalRawEvents);
+  const evsList=dayEvs(processed,key).filter(e=>!e.isSydney).map(e=>(e.time?e.time+' ':'')+e.title).join(', ');
+  const cacheKey='outfit_'+key;
+  const cached=await dbGet(cacheKey,null);
+  if(cached&&cached.length>3){const clean=cached.split('\n')[0].trim();const icon=clean.match(/\p{Emoji}/u)?.[0]||'👕';return{icon,text:clean.replace(/^\p{Emoji}\s*/u,'')};}
+  const prompt=`Flo is a 30-year-old man in Uster Switzerland. Tomorrow: feels ${feels}°, high ${hi}°, low ${lo}°, rain ${rain}%. Appointments: ${evsList||'nothing specific'}. Recommend what to wear as a man. Reply with ONLY one emoji + max 8 words. No explanations, no extra lines.`;
+  const text=await claudeOutfit(prompt);
+  if(text.length>3)await dbSet(cacheKey,text.split('\n')[0].trim());
+  const clean=text.split('\n')[0].trim();
+  return{icon:clean.match(/\p{Emoji}/u)?.[0]||'👕',text:clean.replace(/^\p{Emoji}\s*/u,'')};
 }
+
 
 function buildClockWx(iconKey,temp,cond,hi,lo,sunrise,sunset){
   const a='var(--accent)',cl='rgba(180,185,200,.75)',w='rgba(160,200,255,.6)';
