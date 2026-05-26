@@ -789,7 +789,7 @@ function renderSleep(nights){
 async function generateBriefing(){
   const cacheKey='briefing_'+todayKey();
   const cached=await dbGet(cacheKey,null);
-  if(cached){
+  if(cached&&cached.length>20){
     $('#briefingText').innerHTML=cached;
     $('#briefingMeta').textContent='Updated this morning · Refreshes daily';
     $('#briefingCard').style.display='';
@@ -842,7 +842,7 @@ Write a single natural paragraph (3–5 sentences) as if speaking to Flo directl
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
+        model:'claude-sonnet-4-5',
         max_tokens:300,
         messages:[{role:'user',content:prompt}]
       })
