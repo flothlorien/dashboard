@@ -723,16 +723,11 @@ async function fetchSleep(){
         else if(stage===6)rem+=dur;
         else if(stage===1)awake+=dur;
       }
-      // Use session duration as total (most accurate), segments for breakdown
-      const totalMs=sessionDurationMs;
-      console.log('Sleep session:',new Date(parseInt(s.startTimeMillis)).toLocaleDateString(),
-        'session duration:',Math.round(sessionDurationMs/60000)+'min',
-        'seg total:',Math.round(segTotalMs/60000)+'min',
-        'light:',Math.round(light/60000),'deep:',Math.round(deep/60000),
-        'rem:',Math.round(rem/60000),'awake:',Math.round(awake/60000));
+      // True sleep = segment time minus awake periods
+      const sleepMs=segTotalMs>0?segTotalMs-awake:sessionDurationMs;
       nights.push({
         date:new Date(parseInt(s.startTimeMillis)),
-        totalMin:Math.round(totalMs/60000),
+        totalMin:Math.round(sleepMs/60000),
         light:Math.round(light/60000),
         deep:Math.round(deep/60000),
         rem:Math.round(rem/60000),
