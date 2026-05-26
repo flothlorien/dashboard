@@ -681,7 +681,6 @@ async function fetchSleep(){
   if(!healthToken)return;
   try{
     const now=new Date();
-    // Fetch last 8 days of sleep sessions
     const endMs=now.getTime();
     const startMs=endMs-(8*86400000);
     const r=await fetch(
@@ -690,11 +689,19 @@ async function fetchSleep(){
     );
     if(!r.ok){console.warn('Sleep sessions',r.status);return;}
     const sessions=await r.json();
+    console.log('Sleep sessions found:',sessions.session?.length,'sessions:',
+      sessions.session?.map(s=>({
+        name:s.name,
+        start:new Date(parseInt(s.startTimeMillis)).toLocaleString(),
+        end:new Date(parseInt(s.endTimeMillis)).toLocaleString(),
+        durationMin:Math.round((parseInt(s.endTimeMillis)-parseInt(s.startTimeMillis))/60000)
+      }))
+    );
     if(!sessions.session?.length){renderSleep([]);return;}
 
-    // For each session fetch sleep segments
     const nights=[];
     for(const s of sessions.session.slice(-8)){
+      const sessionDurationMs=parseInt(s.endTimeMillis)-parseInt(s.startTimeMillis);
       const segR=await fetch('https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate',{
         method:'POST',
         headers:{Authorization:'Bearer '+healthToken,'Content-Type':'application/json'},
@@ -706,18 +713,23 @@ async function fetchSleep(){
       });
       const segD=await segR.json();
       const points=segD.bucket?.[0]?.dataset?.[0]?.point||[];
-      let totalMs=0,light=0,deep=0,rem=0,awake=0;
+      let light=0,deep=0,rem=0,awake=0,segTotalMs=0;
       for(const p of points){
         const stage=p.value?.[0]?.intVal||0;
-        const dur=( parseInt(p.endTimeNanos)-parseInt(p.startTimeNanos))/1e6;
-        totalMs+=dur;
+        const dur=(parseInt(p.endTimeNanos)-parseInt(p.startTimeNanos))/1e6;
+        segTotalMs+=dur;
         if(stage===4)light+=dur;
         else if(stage===5)deep+=dur;
         else if(stage===6)rem+=dur;
         else if(stage===1)awake+=dur;
       }
-      // Fall back to session duration if no segments
-      if(totalMs===0) totalMs=parseInt(s.endTimeMillis)-parseInt(s.startTimeMillis);
+      // Use session duration as total (most accurate), segments for breakdown
+      const totalMs=sessionDurationMs;
+      console.log('Sleep session:',new Date(parseInt(s.startTimeMillis)).toLocaleDateString(),
+        'session duration:',Math.round(sessionDurationMs/60000)+'min',
+        'seg total:',Math.round(segTotalMs/60000)+'min',
+        'light:',Math.round(light/60000),'deep:',Math.round(deep/60000),
+        'rem:',Math.round(rem/60000),'awake:',Math.round(awake/60000));
       nights.push({
         date:new Date(parseInt(s.startTimeMillis)),
         totalMin:Math.round(totalMs/60000),
