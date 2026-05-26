@@ -28,14 +28,17 @@
   .card-h h2{font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
 
   /* CLOCK WEATHER WIDGET */
-  .clock-wx{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
-  .clock-wx-scene{width:160px;height:120px;position:relative;overflow:visible}
-  .clock-wx-temp{font-family:var(--display);font-size:52px;line-height:1;text-align:right;color:var(--text);margin-top:-4px}
-  .clock-wx-temp sup{font-size:.38em;color:var(--muted);vertical-align:super}
-  .clock-wx-meta{display:flex;gap:10px;justify-content:flex-end;align-items:center;font-size:11.5px;color:var(--faint);font-feature-settings:"tnum";flex-wrap:wrap}
-  .clock-wx-meta .hi{color:var(--muted)}
-  .clock-wx-meta .sr{color:#c8a040}
-  .clock-wx-meta .sep{opacity:.35}
+  .clock-wx{display:flex;flex-direction:column;align-items:flex-end;gap:0;flex:none;min-width:120px}
+  .clock-wx-scene{width:110px;height:86px;position:relative;overflow:hidden;display:block}
+  .clock-wx-temp{font-family:var(--display);font-size:56px;line-height:1;text-align:right;color:var(--text);letter-spacing:-.02em;margin-top:-4px}
+  .clock-wx-temp sup{font-size:.32em;color:var(--muted);vertical-align:super}
+  .clock-wx-cond{font-size:11.5px;color:var(--muted);text-align:right;margin-top:1px}
+  .clock-wx-hilo{display:flex;gap:8px;justify-content:flex-end;margin-top:7px;font-size:14px;font-weight:500;font-feature-settings:"tnum"}
+  .clock-wx-hilo .hi{color:var(--text)}
+  .clock-wx-hilo .lo{color:var(--muted)}
+  .clock-wx-hilo .sep{color:var(--faint);font-weight:400}
+  .clock-wx-sun{display:flex;gap:10px;justify-content:flex-end;margin-top:6px;font-size:11px;color:var(--faint);font-feature-settings:"tnum";letter-spacing:.01em}
+  .clock-wx-sun .sr{color:rgba(200,160,64,.7)}
 
   /* sun */
   .wx-anim-sun{transform-origin:50% 50%;animation:wxSpin 12s linear infinite}
@@ -72,12 +75,13 @@
   /* CLOCK */
   .clock{grid-column:span 12;display:flex;flex-direction:column;justify-content:space-between;min-height:200px;overflow:hidden}
   .clock::after{content:"";position:absolute;right:-60px;top:-60px;width:280px;height:280px;border-radius:50%;background:var(--accent-soft);filter:blur(24px);pointer-events:none}
-  .clock-main{display:flex;align-items:flex-end;justify-content:space-between;gap:20px}
-  .greeting{font-family:var(--display);font-style:italic;font-size:26px;color:var(--muted);position:relative}
+  .clock-main{display:flex;align-items:flex-end;justify-content:space-between;width:100%}
+  .greeting{font-family:var(--display);font-style:italic;font-size:clamp(20px,2.4vw,28px);color:var(--muted);position:relative;margin-bottom:8px}
   .greeting b{font-style:normal;color:var(--text);cursor:pointer;border-bottom:1px dashed transparent;transition:.2s}
   .greeting b:hover{border-bottom-color:var(--line-strong)}
-  .time{font-family:var(--display);font-size:clamp(72px,13vw,128px);line-height:.92;font-feature-settings:"tnum";letter-spacing:-.01em;position:relative}
-  .time .sec{font-size:.34em;color:var(--accent);vertical-align:super;margin-left:.12em;letter-spacing:0}
+  .date-big{font-family:var(--display);font-size:clamp(38px,5.5vw,58px);line-height:.95;letter-spacing:-.02em;color:var(--text)}
+  .time{font-family:var(--display);font-style:italic;font-size:clamp(30px,4.2vw,48px);line-height:1;font-feature-settings:"tnum";letter-spacing:-.01em;color:var(--muted);align-self:flex-end}
+  .time .sec{font-size:.75em;color:var(--accent)}
   .clock-foot{display:flex;align-items:center;gap:14px;color:var(--muted);font-size:14px;margin-top:12px}
   .clock-foot .pill{background:var(--surface-2);border:1px solid var(--line);padding:5px 12px;border-radius:999px;font-size:12.5px;color:var(--text)}
 
@@ -212,12 +216,13 @@
 
   @media(max-width:860px){
     .clock,.pasched{grid-column:span 12}
+    .date-big{font-size:clamp(36px,8vw,56px)}
     .pas-cols{grid-template-columns:1fr}
     .pas-col{border-right:none;border-bottom:1px solid var(--line)}
     .pas-col:last-child{border-bottom:none}
     .wrap{padding:30px 18px 54px}
   }
-  @media(max-width:520px){.time{font-size:64px}}
+  @media(max-width:520px){.date-big{font-size:36px}.time{font-size:22px}}
 </style>
 
 <div class="wrap">
@@ -227,14 +232,14 @@
     <section class="card clock">
       <div class="greeting" id="greeting"></div>
       <div class="clock-main">
-        <div style="display:flex;align-items:baseline;gap:20px">
-          <div class="time" id="time">--:--</div>
-          <div id="clockDate" style="font-family:var(--display);font-style:italic;font-size:clamp(18px,2.8vw,28px);color:var(--muted);line-height:1;white-space:nowrap"></div>
-        </div>
+        <div class="date-big" id="clockDate"></div>
+        <div class="time" id="time">--:--</div>
         <div class="clock-wx" id="clockWx" style="display:none">
-          <svg class="clock-wx-scene" id="clockWxScene" viewBox="0 0 160 120"></svg>
+          <svg class="clock-wx-scene" id="clockWxScene" viewBox="0 0 110 86"></svg>
           <div class="clock-wx-temp" id="clockWxTemp"></div>
-          <div class="clock-wx-meta" id="clockWxMeta"></div>
+          <div class="clock-wx-cond" id="clockWxCond"></div>
+          <div class="clock-wx-hilo" id="clockWxHilo"></div>
+          <div class="clock-wx-sun" id="clockWxSun"></div>
         </div>
       </div>
       <div class="clock-foot">
@@ -380,7 +385,7 @@ const MON3=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','D
 function weekNo(d){const o=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const dn=o.getUTCDay()||7;o.setUTCDate(o.getUTCDate()+4-dn);const ys=new Date(Date.UTC(o.getUTCFullYear(),0,1));return Math.ceil((((o-ys)/864e5)+1)/7);}
 function tickClock(){
   const n=new Date();
-  $('#time').innerHTML=pad(n.getHours())+':'+pad(n.getMinutes())+'<span class="sec">'+pad(n.getSeconds())+'</span>';
+  $('#time').innerHTML=pad(n.getHours())+':'+pad(n.getMinutes())+'<span class="sec"> '+pad(n.getSeconds())+'</span>';
   const h=n.getHours();
   const g=h<5?'Still up':h<12?'Good morning':h<18?'Good afternoon':h<22?'Good evening':'Good night';
   const nm=profile.name?(', <b id="nameBtn">'+profile.name+'</b>'):'<b id="nameBtn"> — add name</b>';
@@ -389,7 +394,7 @@ function tickClock(){
 }
 function paintDate(){
   const n=new Date();
-  $('#clockDate').textContent=DAYS[n.getDay()]+', '+n.getDate()+' '+MON[n.getMonth()];
+  $('#clockDate').innerHTML=DAYS[n.getDay()]+',<br>'+n.getDate()+' '+MON[n.getMonth()];
   $('#zone').textContent=Intl.DateTimeFormat().resolvedOptions().timeZone.replace('_',' ');
   $('#weeknum').textContent='Week '+weekNo(n);
 }
@@ -1021,11 +1026,11 @@ function buildClockWx(iconKey,temp,cond,hi,lo,sunrise,sunset){
   const svg=$('#clockWxScene');
   svg.innerHTML=scenes[iconKey]||scenes.cloud;
   $('#clockWxTemp').innerHTML=Math.round(temp)+'<sup>°</sup>';
-  let meta=[];
-  if(hi!=null&&lo!=null) meta.push(`<span class="hi">↑${Math.round(hi)}° ↓${Math.round(lo)}°</span>`);
-  if(cond) meta.push(`<span>${cond}</span>`);
-  if(sunrise&&sunset) meta.push(`<span class="sr">☀ ${sunrise} ☽ ${sunset}</span>`);
-  $('#clockWxMeta').innerHTML=meta.join('<span class="sep"> · </span>');
+  $('#clockWxCond').textContent=cond||'';
+  if(hi!=null&&lo!=null)
+    $('#clockWxHilo').innerHTML=`<span class="hi">${Math.round(hi)}°</span><span class="sep">/</span><span class="lo">${Math.round(lo)}°</span>`;
+  if(sunrise&&sunset)
+    $('#clockWxSun').innerHTML=`<span class="sr">☀ ${sunrise}</span><span>☽ ${sunset}</span>`;
   $('#clockWx').style.display='flex';
 }
 
