@@ -154,7 +154,11 @@
   .pas-ev-time.all-day{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);font-weight:600}
   .pas-col:not(.today-col) .pas-ev-time{color:var(--muted)}
   .pas-col:not(.today-col) .pas-ev-time.all-day{color:var(--faint)}
-  .pas-ev-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);flex:none;margin-top:5px}
+  .pas-ev-dot.sydney{background:#e07a9a}
+  .pas-ev-time.sydney{color:#e07a9a}
+  .pas-ev.sydney-ev .pas-ev-dot{background:#e07a9a}
+  .pas-ev.sydney-ev .pas-ev-time{color:#d4688a}
+  .pas-ev-owner{font-size:10px;color:#c45a7a;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-left:4px;flex:none;align-self:center}
   .pas-ev-dot.shared{background:var(--good)}
   .pas-col:not(.today-col) .pas-ev-dot{opacity:.45}
   .pas-ev-title{flex:1;font-size:14.5px;line-height:1.4;word-break:break-word}
@@ -175,17 +179,24 @@
   .now-indicator::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   .now-indicator::after{content:"";flex:1;height:1px;background:var(--accent);opacity:.4}
 
-  /* news column */
-  .news-item{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.045);cursor:pointer;text-decoration:none;display:block;transition:.15s}
-  .news-item:last-child{border-bottom:none}
-  .news-item:hover .news-title{color:var(--accent)}
-  .news-item-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
-  .news-cat{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.9}
-  .news-cat-reuters{color:#f0a050}
-  .news-cat-srf{color:#84c08a}
-  .news-title{font-size:13.5px;line-height:1.45;color:var(--text);transition:.15s}
-  .news-age{font-size:11px;color:var(--faint);white-space:nowrap}
-  .news-setup p{font-size:13px;color:var(--muted);line-height:1.5}
+  /* sleep panel */
+  .sleep-tonight{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+  .sleep-dur{font-family:var(--display);font-size:36px;line-height:1;color:var(--text)}
+  .sleep-dur span{font-size:16px;color:var(--muted);font-family:var(--body)}
+  .sleep-stages{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+  .sleep-stage{font-size:12px;display:flex;flex-direction:column;gap:2px;flex:1;min-width:44px}
+  .sleep-stage .st-val{font-size:14px;font-weight:600;color:var(--text);font-feature-settings:"tnum"}
+  .sleep-stage .st-lab{color:var(--faint);font-size:10.5px;letter-spacing:.04em}
+  .sleep-stage .st-bar{height:4px;border-radius:2px;margin-top:4px}
+  .sleep-history{display:flex;flex-direction:column;gap:5px}
+  .sleep-row{display:flex;align-items:center;gap:8px;font-size:12px}
+  .sleep-row .sr-day{width:26px;color:var(--faint);font-weight:600;font-size:11px;text-align:right;flex:none}
+  .sleep-row .sr-track{flex:1;height:14px;background:var(--surface-2);border-radius:3px;overflow:hidden;position:relative}
+  .sleep-row .sr-fill{height:100%;border-radius:3px;position:absolute;top:0;left:0;transition:width .5s ease}
+  .sleep-row .sr-val{width:36px;text-align:right;color:var(--muted);flex:none;font-feature-settings:"tnum"}
+  .sleep-quality-good{color:var(--good)}
+  .sleep-quality-ok{color:var(--accent)}
+  .sleep-quality-poor{color:var(--faint)}
   .news-loading{color:var(--faint);font-size:13px;font-style:italic;padding:10px 0}
 
   .clock-foot .wx-loc{font-size:12.5px;cursor:pointer;border:1px solid var(--line);background:var(--surface-2);padding:5px 11px;border-radius:999px;color:var(--text);transition:.2s;white-space:nowrap}
@@ -235,6 +246,20 @@
           <div class="sp-bar"><div class="sp-fill" id="stepsFill" style="width:0%"></div></div>
         </div>
         <span class="wx-loc" id="wxLoc" style="margin-left:auto">· · ·</span>
+      </div>
+    </section>
+
+    <!-- PA BRIEFING -->
+    <section class="card pasched" id="briefingCard" style="padding:20px 26px;display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:3px;align-self:stretch;background:var(--accent);border-radius:2px;opacity:.7;flex:none"></div>
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:8px;display:flex;align-items:center;gap:8px">
+            <span style="width:5px;height:5px;border-radius:50%;background:var(--good);display:inline-block"></span>Your week
+          </div>
+          <div id="briefingText" style="font-family:var(--display);font-style:italic;font-size:15.5px;line-height:1.75;color:var(--muted)"></div>
+          <div id="briefingMeta" style="font-size:11px;color:var(--faint);margin-top:10px"></div>
+        </div>
       </div>
     </section>
 
@@ -302,9 +327,9 @@
           </div>
           <div class="pas-col">
             <div class="pas-col-hd">
-              <div class="c-label">Axios · SRF</div>
+              <div class="c-label">Sleep</div>
             </div>
-            <div id="newsItems"><div class="news-loading">Loading headlines…</div></div>
+            <div id="sleepPanel"><div class="news-loading">Sign in to see sleep data</div></div>
           </div>
         </div>
       </div>
@@ -330,7 +355,7 @@ async function dbSet(k,v){
 const CLIENT_ID_CAL='376346742576-5g3iv42gagm6d9uknl2cd48gnei07dae.apps.googleusercontent.com';
 const CLIENT_ID_HEALTH='376346742576-5g3iv42gagm6d9uknl2cd48gnei07dae.apps.googleusercontent.com';
 const SCOPE_CAL='https://www.googleapis.com/auth/calendar.events';
-const SCOPE_HEALTH='https://www.googleapis.com/auth/fitness.activity.read';
+const SCOPE_HEALTH='https://www.googleapis.com/auth/fitness.activity.read https://www.googleapis.com/auth/fitness.sleep.read';
 const CAL_IDS=['flo.misteli@gmail.com','7p0sf2qln3o8ihehmg875jtkfo@group.calendar.google.com'];
 
 /* ── state ── */
@@ -394,7 +419,8 @@ function initGoogleAuth(){
       showLoadingColumns();
       await fetchAllEvents();
       renderSchedule();
-      await fetchSteps();
+      await Promise.all([fetchSteps(), fetchSleep()]);
+      generateBriefing();
     }
   });
   healthTokenClient=tokenClient;
@@ -495,7 +521,10 @@ function processEvents(raw){
       const dt=new Date(e.start.dateTime);
       time=pad(dt.getHours())+':'+pad(dt.getMinutes());
     }
-    return{id:e.id,title:e.summary||'(No title)',date,time,isAllDay,calId:e._calId,isShared:e._calId!==CAL_IDS[0]};
+    const rawTitle=e.summary||'(No title)';
+    const isSydney=/^\[S\]/i.test(rawTitle.trim());
+    const title=isSydney?rawTitle.trim().replace(/^\[S\]\s*/i,''):rawTitle;
+    return{id:e.id,title,date,time,isAllDay,calId:e._calId,isShared:e._calId!==CAL_IDS[0],isSydney};
   });
 }
 
@@ -509,13 +538,14 @@ function dayEvs(processed,key){
 
 function evHTML(ev,state){
   const tl=ev.isAllDay?'All day':ev.time||'—';
-  const tc='pas-ev-time'+(ev.isAllDay?' all-day':'');
-  const dc='pas-ev-dot'+(ev.isShared?' shared':'');
-  const cls='pas-ev'+(state?' '+state:'');
+  const tc='pas-ev-time'+(ev.isAllDay?' all-day':'')+(ev.isSydney?' sydney':'');
+  const dc='pas-ev-dot'+(ev.isSydney?' sydney':ev.isShared?' shared':'');
+  const cls='pas-ev'+(ev.isSydney?' sydney-ev':'')+(state?' '+state:'');
+  const owner=ev.isSydney?'<span class="pas-ev-owner">S</span>':'';
   return '<div class="'+cls+'">'+
     '<span class="'+tc+'">'+tl+'</span>'+
     '<span class="'+dc+'"></span>'+
-    '<span class="pas-ev-title">'+esc(ev.title)+'</span>'+
+    '<span class="pas-ev-title">'+esc(ev.title)+owner+'</span>'+
     '<button class="pas-ev-del" data-id="'+ev.id+'" data-cal="'+esc(ev.calId)+'">×</button>'+
     '</div>';
 }
@@ -638,75 +668,197 @@ function renderSchedule(){
   });
 }
 
-/* ── News: SRF Switzerland + Swissinfo (RSS, multi-proxy fallback) ── */
-const NEWS_FEEDS=[
-  {url:'https://api.axios.com/feed/top/',src:'Axios',color:'#e3b35e'},
-  {url:'https://www.srf.ch/news/bnf/rss/1646',src:'SRF',color:'#84c08a'},
-];
-const PROXIES=[
-  u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-  u=>`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
-];
+/* ── sleep ── */
+const SLEEP_STAGES={1:'Awake',2:'Sleep',3:'Out of bed',4:'Light',5:'Deep',6:'REM'};
+const SLEEP_COLORS={4:'#534AB7',5:'#1D9E75',6:'#8B5CF6',1:'#888780'};
 
-async function fetchRSS(feedUrl){
-  for(const proxy of PROXIES){
-    try{
-      const r=await fetch(proxy(feedUrl),{signal:AbortSignal.timeout(6000)});
-      if(!r.ok)continue;
-      let text=await r.text();
-      if(text.trim().startsWith('{')){try{text=JSON.parse(text).contents||text;}catch(_){}}
-      const xml=new DOMParser().parseFromString(text,'text/xml');
-      const items=[...xml.querySelectorAll('item')];
-      if(items.length)return items;
-    }catch(_){continue;}
-  }
-  return[];
-}
+async function fetchSleep(){
+  if(!healthToken)return;
+  try{
+    const now=new Date();
+    // Fetch last 8 days of sleep sessions
+    const endMs=now.getTime();
+    const startMs=endMs-(8*86400000);
+    const r=await fetch(
+      `https://www.googleapis.com/fitness/v1/users/me/sessions?startTime=${new Date(startMs).toISOString()}&endTime=${new Date(endMs).toISOString()}&activityType=72`,
+      {headers:{Authorization:'Bearer '+healthToken}}
+    );
+    if(!r.ok){console.warn('Sleep sessions',r.status);return;}
+    const sessions=await r.json();
+    if(!sessions.session?.length){renderSleep([]);return;}
 
-async function loadNews(){
-  const el=$('#newsItems');
-  el.innerHTML='<div class="news-loading">Loading headlines…</div>';
-  const relTime=pub=>{
-    if(!pub)return'';
-    const diff=Math.round((Date.now()-new Date(pub))/60000);
-    if(isNaN(diff)||diff<0)return'';
-    if(diff<60)return diff+'m ago';
-    if(diff<1440)return Math.round(diff/60)+'h ago';
-    return Math.round(diff/1440)+'d ago';
-  };
-  const results=await Promise.allSettled(NEWS_FEEDS.map(f=>fetchRSS(f.url)));
-  let items=[];
-  results.forEach((res,i)=>{
-    const feed=NEWS_FEEDS[i];
-    if(res.status==='fulfilled'){
-      res.value.slice(0,4).forEach(item=>{
-        const pub=item.querySelector('pubDate')?.textContent||'';
-        items.push({
-          src:feed.src,color:feed.color,
-          title:item.querySelector('title')?.textContent?.trim()||'',
-          url:item.querySelector('link')?.textContent?.trim()||item.querySelector('guid')?.textContent?.trim()||'#',
-          pub,ts:pub?new Date(pub).getTime():0
-        });
+    // For each session fetch sleep segments
+    const nights=[];
+    for(const s of sessions.session.slice(-8)){
+      const segR=await fetch('https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+healthToken,'Content-Type':'application/json'},
+        body:JSON.stringify({
+          aggregateBy:[{dataTypeName:'com.google.sleep.segment'}],
+          startTimeMillis:s.startTimeMillis,
+          endTimeMillis:s.endTimeMillis
+        })
+      });
+      const segD=await segR.json();
+      const points=segD.bucket?.[0]?.dataset?.[0]?.point||[];
+      let totalMs=0,light=0,deep=0,rem=0,awake=0;
+      for(const p of points){
+        const stage=p.value?.[0]?.intVal||0;
+        const dur=( parseInt(p.endTimeNanos)-parseInt(p.startTimeNanos))/1e6;
+        totalMs+=dur;
+        if(stage===4)light+=dur;
+        else if(stage===5)deep+=dur;
+        else if(stage===6)rem+=dur;
+        else if(stage===1)awake+=dur;
+      }
+      // Fall back to session duration if no segments
+      if(totalMs===0) totalMs=parseInt(s.endTimeMillis)-parseInt(s.startTimeMillis);
+      nights.push({
+        date:new Date(parseInt(s.startTimeMillis)),
+        totalMin:Math.round(totalMs/60000),
+        light:Math.round(light/60000),
+        deep:Math.round(deep/60000),
+        rem:Math.round(rem/60000),
+        awake:Math.round(awake/60000)
       });
     }
-  });
-  if(!items.length){
-    el.innerHTML='<div class="news-loading">Could not load headlines. <span style="cursor:pointer;color:var(--accent)" onclick="loadNews()">Retry</span></div>';
-    return;
-  }
-  items.sort((a,b)=>b.ts-a.ts);
-  el.innerHTML=items.map(item=>`
-    <a class="news-item" href="${esc(item.url)}" target="_blank" rel="noopener">
-      <div class="news-item-head">
-        <span class="news-cat" style="color:${item.color}">${esc(item.src)}</span>
-        <span class="news-age">${relTime(item.pub)}</span>
-      </div>
-      <div class="news-title">${esc(item.title)}</div>
-    </a>`).join('');
+    nights.sort((a,b)=>a.date-b.date);
+    renderSleep(nights);
+  }catch(e){console.error('Sleep error:',e);}
 }
 
-/* ── add event ── */
+function fmtDur(min){
+  if(!min)return'—';
+  const h=Math.floor(min/60),m=min%60;
+  return h?h+'h '+(m?m+'m':''):m+'m';
+}
+
+function renderSleep(nights){
+  const el=$('#sleepPanel');
+  if(!nights.length){el.innerHTML='<div class="news-loading">No sleep data found.</div>';return;}
+
+  const last=nights[nights.length-1];
+  const maxMin=Math.max(...nights.map(n=>n.totalMin),480);
+  const qualColor=last.totalMin>=420?'sleep-quality-good':last.totalMin>=360?'sleep-quality-ok':'sleep-quality-poor';
+
+  const stagesHTML=last.deep||last.rem||last.light?`
+    <div class="sleep-stages">
+      ${last.deep?`<div class="sleep-stage">
+        <span class="st-val">${fmtDur(last.deep)}</span>
+        <span class="st-lab">Deep</span>
+        <div class="st-bar" style="background:#1D9E75;width:${Math.min(100,last.deep/last.totalMin*100*3)}%"></div>
+      </div>`:''}
+      ${last.rem?`<div class="sleep-stage">
+        <span class="st-val">${fmtDur(last.rem)}</span>
+        <span class="st-lab">REM</span>
+        <div class="st-bar" style="background:#8B5CF6;width:${Math.min(100,last.rem/last.totalMin*100*3)}%"></div>
+      </div>`:''}
+      ${last.light?`<div class="sleep-stage">
+        <span class="st-val">${fmtDur(last.light)}</span>
+        <span class="st-lab">Light</span>
+        <div class="st-bar" style="background:#534AB7;width:${Math.min(100,last.light/last.totalMin*100*2)}%"></div>
+      </div>`:''}
+      ${last.awake?`<div class="sleep-stage">
+        <span class="st-val">${fmtDur(last.awake)}</span>
+        <span class="st-lab">Awake</span>
+        <div class="st-bar" style="background:#888780;width:${Math.min(100,last.awake/last.totalMin*100*4)}%"></div>
+      </div>`:''}
+    </div>`:'';
+
+  const historyHTML=nights.slice(-7).map(n=>{
+    const pct=Math.round(n.totalMin/maxMin*100);
+    const col=n.totalMin>=420?'var(--good)':n.totalMin>=360?'var(--accent)':'rgba(132,192,138,.4)';
+    const dow=DAYS3[n.date.getDay()];
+    return `<div class="sleep-row">
+      <span class="sr-day">${dow}</span>
+      <div class="sr-track"><div class="sr-fill" style="width:${pct}%;background:${col}"></div></div>
+      <span class="sr-val">${fmtDur(n.totalMin)}</span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML=`
+    <div class="sleep-tonight">
+      <div class="sleep-dur ${qualColor}">${fmtDur(last.totalMin)} <span>last night</span></div>
+      ${stagesHTML}
+    </div>
+    <div class="sleep-history">${historyHTML}</div>`;
+}
+
+
+/* ── PA weekly briefing (Claude API, generated once daily) ── */
+async function generateBriefing(){
+  const cacheKey='briefing_'+todayKey();
+  const cached=await dbGet(cacheKey,null);
+  if(cached){
+    $('#briefingText').innerHTML=cached;
+    $('#briefingMeta').textContent='Updated this morning · Refreshes daily';
+    $('#briefingCard').style.display='';
+    return;
+  }
+
+  const now=new Date();
+  const processed=processEvents(gcalRawEvents);
+
+  // Build a week of events — exclude Sydney's ([S]) events
+  const days=[];
+  for(let i=0;i<=6;i++){
+    const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i);
+    const key=todayKey(d);
+    const evs=dayEvs(processed,key).filter(e=>!e.isSydney);
+    if(evs.length){
+      const dayName=DAYS[d.getDay()]+' '+d.getDate()+' '+MON[d.getMonth()];
+      const evList=evs.map(e=>(e.time?e.time+' ':'')+e.title).join(', ');
+      days.push(dayName+': '+evList);
+    }
+  }
+
+  // Build weather context
+  let wxContext='';
+  if(wxData){
+    const day=wxData.day;
+    const lines=[];
+    for(let i=0;i<=6;i++){
+      const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i);
+      const hi=Math.round(day.temperature_2m_max[i]||0);
+      const lo=Math.round(day.temperature_2m_min[i]||0);
+      const rain=day.precipitation_probability_max[i]||0;
+      const label=i===0?'Today':i===1?'Tomorrow':DAYS[d.getDay()];
+      lines.push(`${label}: ${hi}°/${lo}°${rain>=40?', '+rain+'% rain':''}`);
+    }
+    wxContext=lines.join(' | ');
+  }
+
+  const prompt=`You are a personal assistant giving a brief spoken weekly overview to Flo, a 34-year-old working professional based in Uster, Switzerland. 
+
+Calendar events this week (work hours Mon–Fri 9–18 assumed, only personal/after-work appointments listed):
+${days.length?days.join('\n'):'No personal appointments this week.'}
+
+Weather forecast: ${wxContext||'Not available.'}
+
+Write a single natural paragraph (3–5 sentences) as if speaking to Flo directly. Mention the highlights, any weather worth noting for specific days, and the general feel of the week. Be warm but concise — no bullet points, no greetings, no sign-off. Start mid-sentence as if continuing a conversation. Use plain text only, no markdown.`;
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:300,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await resp.json();
+    const text=data.content?.find(c=>c.type==='text')?.text?.trim()||'';
+    if(text){
+      await dbSet(cacheKey,text);
+      $('#briefingText').textContent=text;
+      $('#briefingMeta').textContent='Generated just now · Refreshes daily';
+      $('#briefingCard').style.display='';
+    }
+  }catch(e){
+    console.error('Briefing error:',e);
+  }
+}
 async function addGCalEvent(){
   const title=$('#evTitle').value.trim(),date=$('#evDate').value,time=$('#evTime').value;
   if(!title||!date)return;
@@ -953,11 +1105,10 @@ async function init(){
   // Auto-refresh events every 5 min
   setInterval(async()=>{
     if(gcalConnected&&gcalToken){await fetchAllEvents();renderSchedule();}
-    if(healthToken){await fetchSteps();}
+    if(healthToken){await Promise.all([fetchSteps(),fetchSleep()]);}
   },5*60*1000);
 
   loadWeather(); setInterval(loadWeather,15*60*1000);
-  loadNews(); setInterval(loadNews,30*60*1000);
 }
 init();
 </script>
