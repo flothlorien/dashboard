@@ -847,13 +847,21 @@ Write a single natural paragraph (3–5 sentences) as if speaking to Flo directl
         messages:[{role:'user',content:prompt}]
       })
     });
-    const data=await resp.json();
+    console.log('Briefing HTTP status:',resp.status);
+    const raw=await resp.text();
+    console.log('Briefing raw response:',raw.slice(0,500));
+    let data;
+    try{data=JSON.parse(raw);}catch(e){console.error('Briefing JSON parse failed:',e);return;}
+    console.log('Briefing data.content:',data.content);
     const text=data.content?.find(c=>c.type==='text')?.text?.trim()||'';
+    console.log('Briefing text:',text);
     if(text){
       await dbSet(cacheKey,text);
       $('#briefingText').textContent=text;
       $('#briefingMeta').textContent='Generated just now · Refreshes daily';
       $('#briefingCard').style.display='';
+    }else{
+      console.warn('Briefing: empty text, full data:',JSON.stringify(data));
     }
   }catch(e){
     console.error('Briefing error:',e);
