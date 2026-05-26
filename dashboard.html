@@ -838,7 +838,7 @@ Weather forecast: ${wxContext||'Not available.'}
 Write a single natural paragraph (3–5 sentences) as if speaking to Flo directly. Mention the highlights, any weather worth noting for specific days, and the general feel of the week. Be warm but concise — no bullet points, no greetings, no sign-off. Start mid-sentence as if continuing a conversation. Use plain text only, no markdown.`;
 
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    const resp=await fetch('https://dashboard-briefing.rakastansadetta.workers.dev/',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
